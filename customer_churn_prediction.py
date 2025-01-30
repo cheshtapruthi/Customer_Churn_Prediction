@@ -11,22 +11,27 @@ from imblearn.over_sampling import SMOTE  # For handling imbalanced data
 import joblib  # For saving the model
 
 # Load the dataset
-try:
-    df = pd.read_csv('telco_churn.csv')
-except FileNotFoundError:
-    st.error("The dataset file was not found. Please check the file path.")
-    st.stop()
+@st.cache_data
+def load_data():
+    try:
+        df = pd.read_csv('WA_Fn-UseC_-Telco-Customer-Churn.csv')
+        return df
+    except FileNotFoundError:
+        st.error("The dataset file was not found. Please check the file path.")
+        return None
+
+df = load_data()
 
 # Handle missing values
-print("Missing values before handling:")
-print(df.isnull().sum())
+st.write("Missing values before handling:")
+st.write(df.isnull().sum())
 
 # Fill numeric columns with median and categorical columns with mode
-df.fillna(df.median(numeric_only=True), inplace=True)
-df.fillna(df.mode().iloc[0], inplace=True)
+df.fillna(df.select_dtypes(include=np.number).median(), inplace=True)  # Fill numeric columns with median
+df.fillna(df.select_dtypes(include='object').mode().iloc[0], inplace=True)  # Fill categorical columns with mode
 
-print("Missing values after handling:")
-print(df.isnull().sum())
+st.write("Missing values after handling:")
+st.write(df.isnull().sum())
 
 # Drop unnecessary columns
 df.drop(columns=['customerID'], errors='ignore', inplace=True)
@@ -82,7 +87,7 @@ def predict_churn(data):
     return "Churn" if prediction[0] == 1 else "Not Churn"
 
 # User input for prediction
-st.sidebar.header("User  Input Features")
+st.sidebar.header("User Input Features")
 user_input = []
 for col in X.columns:
     if col in categorical_columns and df[col].nunique() == 2:  # Binary categorical features
